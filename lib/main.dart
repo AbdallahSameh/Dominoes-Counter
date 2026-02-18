@@ -1,7 +1,7 @@
 import 'package:dominos_counter/ui/camera_screen.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MainApp());
 }
