@@ -1,5 +1,4 @@
 import 'package:camera/camera.dart';
-import 'package:dominos_counter/model_service.dart';
 import 'package:dominos_counter/yolo_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,10 +14,10 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   late List<CameraDescription> cameras;
-  final modelService = ModelService();
   CameraController? controller;
-  List<YOLOResult> predictions = [];
-  late Future<void> loaded;
+  late YoloService yoloService;
+  late final initialized;
+  List<Map<String, dynamic>> predictions = [];
 
   initCamera() async {
     List<CameraDescription> _cameras = await availableCameras();
@@ -46,16 +45,16 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   void initState() {
     super.initState();
+    yoloService = YoloService();
+    initialized = yoloService.initializeModel();
     WakelockPlus.enable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     initCamera();
-    loaded = modelService.loadModel();
   }
 
   @override
   void dispose() {
     controller?.dispose();
-    modelService.close();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -68,20 +67,9 @@ class _CameraScreenState extends State<CameraScreen> {
         children: [
           Expanded(
             flex: 4,
-            // child: controller == null || !controller!.value.isInitialized
-            //     ? Center(child: CircularProgressIndicator())
-            //     : CameraPreview(controller!),
-            child: YoloService(
-              onResult: (result) {
-                setState(() {
-                  predictions = result;
-                });
-                print('Found ${predictions.length} objects!');
-                for (final result in predictions) {
-                  print('${result.className}: ${result.confidence}');
-                }
-              },
-            ),
+            child: controller == null || !controller!.value.isInitialized
+                ? Center(child: CircularProgressIndicator())
+                : CameraPreview(controller!),
           ),
           Expanded(
             flex: 1,
@@ -90,9 +78,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 Expanded(
                   child: ListView.separated(
                     itemBuilder: (context, index) {
-                      return Text(
-                        '${predictions[index].className}: ${predictions[index].confidence}',
-                      );
+                      return Text('Count: ${predictions.length}');
                     },
                     separatorBuilder: (context, index) {
                       return SizedBox(height: 12);
@@ -102,16 +88,16 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    // await loaded;
-                    // var input = (await rootBundle.load(
-                    //   'assets/images/test1.jpeg',
-                    // )).buffer.asUint8List();
+                    await initialized;
+                    var input = await (await controller!.takePicture())
+                        .readAsBytes();
 
-                    // modelService.runModel(input);
-                    print('Found ${predictions.length} objects!');
-                    for (final result in predictions) {
-                      print('${result.className}: ${result.confidence}');
-                    }
+                    final results = await yoloService.detectObjects(input);
+
+                    yoloService.boundingBoxes(results);
+                    setState(() {
+                      predictions = results;
+                    });
                   },
                   child: Text('Run Model'),
                 ),
