@@ -1,19 +1,18 @@
 import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ultralytics_yolo/ultralytics_yolo.dart';
 
 class YoloService {
   late YOLO yolo;
-  Future<String> _getModelPath() async {
+  Future<String> _getModelPath(modelName) async {
     final directory = await getApplicationDocumentsDirectory();
-    final path = '${directory.path}/best_float32.tflite';
+    final path = '${directory.path}/$modelName';
     final file = File(path);
 
     // Copy only if not exists
     if (!await file.exists()) {
-      final data = await rootBundle.load('assets/model/best_float32.tflite');
+      final data = await rootBundle.load('assets/model/$modelName');
 
       await file.writeAsBytes(data.buffer.asUint8List());
     }
@@ -24,8 +23,13 @@ class YoloService {
   }
 
   Future<void> initializeModel() async {
-    yolo = YOLO(modelPath: await _getModelPath(), task: YOLOTask.detect);
+    yolo = YOLO(
+      modelPath: await _getModelPath('best_float32(100_168).tflite'),
+      task: YOLOTask.detect,
+    );
     yolo.loadModel();
+
+    print('threshold: ${yolo.numItemsThreshold}');
   }
 
   Future<List<Map<String, dynamic>>> detectObjects(Uint8List imageBytes) async {

@@ -1,4 +1,4 @@
-import 'package:dominos_counter/ui/camera_screen.dart';
+import 'package:dominos_counter/ui/screens/camera_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
