@@ -22,6 +22,7 @@ class _CameraScreenState extends State<CameraScreen> {
   bool cameraOn = true;
   var input;
   late final Size previewSize;
+  bool flashOn = false;
 
   initCamera() async {
     List<CameraDescription> _cameras = await availableCameras();
@@ -57,7 +58,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   @override
-  void dispose() {
+  void dispose() async {
     controller?.dispose();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -70,53 +71,109 @@ class _CameraScreenState extends State<CameraScreen> {
       appBar: AppBar(),
       drawer: Drawer(),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              flex: 4,
-              child: controller == null || !controller!.value.isInitialized
-                  ? Center(child: CircularProgressIndicator())
-                  : cameraOn
-                  ? CameraPreview(controller!)
-                  : Results(
-                      image: input,
-                      painter: BoundingBoxesPaint(
-                        boxes: predictions,
-                        previewSize: previewSize,
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    controller == null && !controller!.value.isInitialized
+                        ? Center(child: CircularProgressIndicator())
+                        : cameraOn
+                        ? Positioned.fill(child: CameraPreview(controller!))
+                        : Results(
+                            image: input,
+                            painter: BoundingBoxesPaint(
+                              boxes: predictions,
+                              previewSize: previewSize,
+                            ),
+                          ),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: IconButton(
+                        onPressed: () async {
+                          if (controller == null ||
+                              !controller!.value.isInitialized)
+                            return;
+
+                          setState(() {
+                            flashOn = !flashOn;
+                          });
+
+                          await controller!.setFlashMode(
+                            flashOn ? FlashMode.torch : FlashMode.off,
+                          );
+                        },
+                        icon: flashOn
+                            ? Icon(Icons.flash_on)
+                            : Icon(Icons.flash_off),
                       ),
                     ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Column(
-                children: [
-                  Expanded(child: Text('Count: ${predictions.length}')),
-                  ElevatedButton(
-                    onPressed: () async {
-                      await initialized;
-                      previewSize = Size(
-                        controller!.value.previewSize!.height,
-                        controller!.value.previewSize!.width,
-                      );
-                      input = await controller!.takePicture();
-
-                      final results = await yoloService.detectObjects(
-                        await input.readAsBytes(),
-                      );
-
-                      yoloService.boundingBoxes(results);
-                      setState(() {
-                        predictions = results;
-                      });
-
-                      cameraOn = false;
-                    },
-                    child: Text('Run Model'),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  spacing: 50,
+                  children: [
+                    Container(
+                      child: Column(
+                        children: [
+                          Text('Detected'),
+                          Text('${predictions.length}'),
+                        ],
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {},
+                          child: Icon(Icons.add),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {},
+                          child: Icon(Icons.minimize),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(onPressed: () {}, child: Text('Add')),
+                        ElevatedButton(onPressed: () {}, child: Text('Cancel')),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await initialized;
+                        previewSize = Size(
+                          controller!.value.previewSize!.height,
+                          controller!.value.previewSize!.width,
+                        );
+                        input = await controller!.takePicture();
+
+                        final results = await yoloService.detectObjects(
+                          await input.readAsBytes(),
+                        );
+
+                        yoloService.boundingBoxes(results);
+                        setState(() {
+                          predictions = results;
+                          cameraOn = false;
+                        });
+                      },
+                      child: Text('Run Model'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
