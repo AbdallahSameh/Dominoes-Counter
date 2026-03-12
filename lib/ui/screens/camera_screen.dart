@@ -26,7 +26,7 @@ class _CameraScreenState extends State<CameraScreen> {
   int predictionsCount = 0;
   bool cameraOn = true;
   var input;
-  late final Size previewSize;
+  late Size previewSize;
   bool flashOn = false;
   SharedPreferences? prefs;
   List<String> logs = [];
@@ -91,18 +91,20 @@ class _CameraScreenState extends State<CameraScreen> {
         child: Column(
           children: [
             DrawerHeader(child: Text('Logs')),
-            ListView.separated(
-              itemCount: logs.length,
-              separatorBuilder: (index, context) => SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                Log item = Log.fromJson(jsonDecode(logs[index]));
-                return ListTile(
-                  title: Text(item.count.toString()),
-                  trailing: Text(
-                    '${item.time.hour.toString().padLeft(2, '0')}:${item.time.minute.toString().padLeft(2, '0')}',
-                  ),
-                );
-              },
+            Expanded(
+              child: ListView.separated(
+                itemCount: logs.length,
+                separatorBuilder: (index, context) => SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  Log item = Log.fromJson(jsonDecode(logs[index]));
+                  return ListTile(
+                    title: Text(item.count.toString()),
+                    trailing: Text(
+                      '${item.time.hour.toString().padLeft(2, '0')}:${item.time.minute.toString().padLeft(2, '0')}',
+                    ),
+                  );
+                },
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -121,138 +123,177 @@ class _CameraScreenState extends State<CameraScreen> {
           ],
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    controller == null && !controller!.value.isInitialized
-                        ? Center(child: CircularProgressIndicator())
-                        : cameraOn
-                        ? Positioned.fill(child: CameraPreview(controller!))
-                        : Results(
-                            image: input,
-                            painter: BoundingBoxesPaint(
-                              boxes: predictions,
-                              previewSize: previewSize,
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/BackgroundImage.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/CameraCard.png'),
+                        fit: BoxFit.fill,
+                      ),
+                      borderRadius: BorderRadius.all(Radius.elliptical(32, 50)),
+                      boxShadow: [
+                        BoxShadow(offset: Offset(0, 2), blurRadius: 10),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(7.2, 10, 7.2, 12),
+                      child: Stack(
+                        children: [
+                          controller == null || !controller!.value.isInitialized
+                              ? Center(child: CircularProgressIndicator())
+                              : Positioned.fill(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.elliptical(32, 50),
+                                    ),
+                                    child: cameraOn
+                                        ? CameraPreview(controller!)
+                                        : Results(
+                                            image: input,
+                                            painter: BoundingBoxesPaint(
+                                              boxes: predictions,
+                                              previewSize: previewSize,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: IconButton(
+                              onPressed: () async {
+                                if (controller == null ||
+                                    !controller!.value.isInitialized)
+                                  return;
+
+                                setState(() {
+                                  flashOn = !flashOn;
+                                });
+
+                                await controller!.setFlashMode(
+                                  flashOn ? FlashMode.torch : FlashMode.off,
+                                );
+                              },
+                              icon: flashOn
+                                  ? Icon(Icons.flash_on)
+                                  : Icon(Icons.flash_off),
                             ),
                           ),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: IconButton(
-                        onPressed: () async {
-                          if (controller == null ||
-                              !controller!.value.isInitialized)
-                            return;
-
-                          setState(() {
-                            flashOn = !flashOn;
-                          });
-
-                          await controller!.setFlashMode(
-                            flashOn ? FlashMode.torch : FlashMode.off,
-                          );
-                        },
-                        icon: flashOn
-                            ? Icon(Icons.flash_on)
-                            : Icon(Icons.flash_off),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              child: Text('Detected: $predictionsCount'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  spacing: 50,
-                  children: [
-                    Container(
-                      child: Column(
-                        children: [Text('Detected'), Text('$predictionsCount')],
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    spacing: 50,
+                    children: [
+                      Container(
+                        child: Column(
+                          children: [Text('Score'), Text('$score')],
+                        ),
                       ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              predictionsCount++;
-                            });
-                          },
-                          child: Icon(Icons.add),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              predictionsCount--;
-                            });
-                          },
-                          child: Icon(Icons.minimize),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () async {
-                            Log log = Log(
-                              count: predictionsCount,
-                              time: DateTime.now(),
-                            );
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                predictionsCount++;
+                              });
+                            },
+                            child: Icon(Icons.add),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                predictionsCount--;
+                              });
+                            },
+                            child: Icon(Icons.minimize),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              Log log = Log(
+                                count: predictionsCount,
+                                time: DateTime.now(),
+                              );
 
-                            logs.add(jsonEncode(log.toJson()));
-                            score += predictionsCount;
-                            predictionsCount = 0;
-
-                            await prefs?.setInt('score', score);
-                            await prefs?.setStringList('logs', logs);
-                            await initPrefs();
-                          },
-                          child: Text('Confirm'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
+                              logs.add(jsonEncode(log.toJson()));
+                              score += predictionsCount;
                               predictionsCount = 0;
-                            });
-                          },
-                          child: Text('Cancel'),
-                        ),
-                      ],
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        await initialized;
-                        previewSize = Size(
-                          controller!.value.previewSize!.height,
-                          controller!.value.previewSize!.width,
-                        );
-                        input = await controller!.takePicture();
 
-                        final results = await yoloService.detectObjects(
-                          await input.readAsBytes(),
-                        );
+                              await prefs?.setInt('score', score);
+                              await prefs?.setStringList('logs', logs);
+                              cameraOn = true;
+                              await initPrefs();
+                            },
+                            child: Text('Confirm'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                cameraOn = true;
+                                predictionsCount = 0;
+                              });
+                            },
+                            child: Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await initialized;
+                          previewSize = Size(
+                            controller!.value.previewSize!.height,
+                            controller!.value.previewSize!.width,
+                          );
+                          input = await controller!.takePicture();
 
-                        yoloService.boundingBoxes(results);
-                        setState(() {
-                          predictions = results;
-                          predictionsCount = results.length;
-                          cameraOn = false;
-                        });
-                      },
-                      child: Text('Run Model'),
-                    ),
-                  ],
+                          final results = await yoloService.detectObjects(
+                            await input.readAsBytes(),
+                          );
+
+                          yoloService.boundingBoxes(results);
+                          setState(() {
+                            predictions = results;
+                            predictionsCount = results.length;
+                            cameraOn = false;
+                          });
+                        },
+                        child: Text('Run Model'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
