@@ -11,6 +11,9 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: CameraScreen());
+    return MaterialApp(
+      theme: ThemeData(fontFamily: 'Cinzel'),
+      home: CameraScreen(),
+    );
   }
 }

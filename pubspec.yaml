@@ -24,6 +24,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Cinzel
+      fonts:
+        - asset: assets\Fonts\Cinzel\Cinzel-VariableFont_wght.ttf
   assets:
     - assets/images/
     - assets/model/

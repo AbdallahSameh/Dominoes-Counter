@@ -195,7 +195,13 @@ class _CameraScreenState extends State<CameraScreen> {
                           Align(
                             alignment: Alignment.bottomCenter,
                             child: Container(
-                              child: Text('Detected: $predictionsCount'),
+                              child: Text(
+                                'Detected: $predictionsCount',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -209,9 +215,31 @@ class _CameraScreenState extends State<CameraScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     spacing: 50,
                     children: [
-                      Container(
-                        child: Column(
-                          children: [Text('Score'), Text('$score')],
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: Container(
+                          width: 215,
+                          height: 80,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage(
+                                'assets/images/ScoreBoard(stretched_to_the_limit).png',
+                              ),
+                              fit: BoxFit.fill,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 20.0),
+                            child: Text(
+                              '$score',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xfff7d98a),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       Row(
